@@ -101,7 +101,7 @@ export default class Block extends React.Component {
  * @return {Range}
  */
 
-function getRelativeRange(node, index, range) {
+export function getRelativeRange(node, index, range) {
   if (range.isUnset) {
     return null
   }
