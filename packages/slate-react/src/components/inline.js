@@ -34,10 +34,6 @@ export default class Inline extends React.Component {
         }
 
         if (child.object === 'inline') {
-          const decs = decorations
-            .map(d => getRelativeRange(node, i, d))
-            .filter(d => d)
-
           children.push(
             <Inline
               ref={refFn}
@@ -45,7 +41,6 @@ export default class Inline extends React.Component {
               editor={editor}
               node={child}
               parent={node}
-              decorations={decs}
             />
           )
         } else {
