@@ -19,8 +19,8 @@ export default class Inline extends React.Component {
     const children = []
 
     if (
-      node.nodes.size > 1 ||
-      (node.nodes.size === 1 && node.nodes.first().text !== ' ')
+      node.nodes.length > 1 ||
+      (node.nodes.length === 1 && node.nodes.first().text !== ' ')
     ) {
       for (const child of node.nodes) {
         const i = children.length
