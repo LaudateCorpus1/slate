@@ -1,4 +1,3 @@
-import getWindow from 'get-window'
 import { PathUtils } from 'slate'
 
 import DATA_ATTRS from '../../constants/data-attributes'
@@ -117,8 +116,7 @@ function QueriesPlugin() {
       return null
     }
 
-    const window = getWindow(domAnchor.node)
-    const r = window.document.createRange()
+    const r = editor.ownerWindow.document.createRange()
     const start = isBackward ? domFocus : domAnchor
     const end = isBackward ? domAnchor : domFocus
     r.setStart(start.node, start.offset)
@@ -194,21 +192,21 @@ function QueriesPlugin() {
     }
 
     // Else resolve a range from the caret position where the drop occured.
-    const window = getWindow(target)
+    const doc = editor.ownerWindow.document
     let native
 
     // COMPAT: In Firefox, `caretRangeFromPoint` doesn't exist. (2016/07/25)
-    if (window.document.caretRangeFromPoint) {
-      native = window.document.caretRangeFromPoint(x, y)
-    } else if (window.document.caretPositionFromPoint) {
-      const position = window.document.caretPositionFromPoint(x, y)
-      native = window.document.createRange()
+    if (doc.caretRangeFromPoint) {
+      native = doc.caretRangeFromPoint(x, y)
+    } else if (doc.caretPositionFromPoint) {
+      const position = doc.caretPositionFromPoint(x, y)
+      native = doc.createRange()
       native.setStart(position.offsetNode, position.offset)
       native.setEnd(position.offsetNode, position.offset)
-    } else if (window.document.body.createTextRange) {
+    } else if (doc.body.createTextRange) {
       // COMPAT: In IE, `caretRangeFromPoint` and
       // `caretPositionFromPoint` don't exist. (2018/07/11)
-      native = window.document.body.createTextRange()
+      native = doc.body.createTextRange()
 
       try {
         native.moveToPoint(x, y)
@@ -315,7 +313,6 @@ function QueriesPlugin() {
       nativeOffset
     )
 
-    const window = getWindow(nativeNode)
     const { parentNode } = nearestNode
     let leafNode = parentNode.closest(SELECTORS.LEAF)
     let textNode
@@ -326,7 +323,7 @@ function QueriesPlugin() {
     // determine what the offset relative to the text node is.
     if (leafNode) {
       textNode = leafNode.closest(SELECTORS.TEXT)
-      const range = window.document.createRange()
+      const range = editor.ownerWindow.document.createRange()
       range.setStart(textNode, 0)
       range.setEnd(nearestNode, nearestOffset)
       const contents = range.cloneContents()
@@ -403,13 +400,11 @@ function QueriesPlugin() {
       return null
     }
 
-    const window = getWindow(el)
-
     // If the `domRange` object is a DOM `Range` or `StaticRange` object, change it
     // into something that looks like a DOM `Selection` instead.
     if (
-      domRange instanceof window.Range ||
-      (window.StaticRange && domRange instanceof window.StaticRange)
+      domRange instanceof editor.ownerWindow.Range ||
+      (editor.ownerWindow.StaticRange && domRange instanceof editor.ownerWindow.StaticRange)
     ) {
       domRange = {
         anchorNode: domRange.startContainer,

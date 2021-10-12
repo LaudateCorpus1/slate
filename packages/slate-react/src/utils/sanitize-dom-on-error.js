@@ -26,7 +26,7 @@ export default function sanitizeDomOnError(editor, domNode, fn) {
     if (blockNode == null) return { failed: true }
 
     const lineIndex = editor.value.document.nodes.indexOf(blockNode)
-    const selection = window.getSelection()
+    const selection = domElement.ownerDocument.defaultView.getSelection()
 
     if (
       selection != null &&

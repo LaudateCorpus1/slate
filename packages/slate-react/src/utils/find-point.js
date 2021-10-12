@@ -1,4 +1,3 @@
-import getWindow from 'get-window'
 import invariant from 'tiny-invariant'
 import warning from 'tiny-warning'
 import { Value } from 'slate'
@@ -32,7 +31,6 @@ function findPoint(nativeNode, nativeOffset, editor) {
     nativeOffset
   )
 
-  const window = getWindow(nativeNode)
   const { parentNode } = nearestNode
   let rangeNode = parentNode.closest(SELECTORS.LEAF)
   let offset
@@ -41,7 +39,7 @@ function findPoint(nativeNode, nativeOffset, editor) {
   // Calculate how far into the text node the `nearestNode` is, so that we can
   // determine what the offset relative to the text node is.
   if (rangeNode) {
-    const range = window.document.createRange()
+    const range = editor.ownerWindow.document.createRange()
     const textNode = rangeNode.closest(SELECTORS.TEXT)
     range.setStart(textNode, 0)
     range.setEnd(nearestNode, nearestOffset)

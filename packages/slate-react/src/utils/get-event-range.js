@@ -1,4 +1,3 @@
-import getWindow from 'get-window'
 import invariant from 'tiny-invariant'
 import warning from 'tiny-warning'
 import { Value } from 'slate'
@@ -61,21 +60,21 @@ function getEventRange(event, editor) {
   }
 
   // Else resolve a range from the caret position where the drop occured.
-  const window = getWindow(target)
+  const doc = editor.ownerWindow.document
   let native
 
   // COMPAT: In Firefox, `caretRangeFromPoint` doesn't exist. (2016/07/25)
-  if (window.document.caretRangeFromPoint) {
-    native = window.document.caretRangeFromPoint(x, y)
-  } else if (window.document.caretPositionFromPoint) {
-    const position = window.document.caretPositionFromPoint(x, y)
-    native = window.document.createRange()
+  if (doc.caretRangeFromPoint) {
+    native = doc.caretRangeFromPoint(x, y)
+  } else if (doc.caretPositionFromPoint) {
+    const position = doc.caretPositionFromPoint(x, y)
+    native = doc.createRange()
     native.setStart(position.offsetNode, position.offset)
     native.setEnd(position.offsetNode, position.offset)
-  } else if (window.document.body.createTextRange) {
+  } else if (doc.body.createTextRange) {
     // COMPAT: In IE, `caretRangeFromPoint` and
     // `caretPositionFromPoint` don't exist. (2018/07/11)
-    native = window.document.body.createTextRange()
+    native = doc.body.createTextRange()
 
     try {
       native.moveToPoint(x, y)

@@ -1,6 +1,5 @@
 import Base64 from 'slate-base64-serializer'
 import Plain from 'slate-plain-serializer'
-import getWindow from 'get-window'
 import invariant from 'tiny-invariant'
 import { IS_IE } from 'slate-dev-environment'
 import { Value } from 'slate'
@@ -25,8 +24,7 @@ function cloneFragment(event, editor, callback = () => undefined) {
     'As of Slate 0.42.0, the `cloneFragment` utility takes an `editor` instead of a `value`.'
   )
 
-  const window = getWindow(event.target)
-  const native = window.getSelection()
+  const native = editor.ownerWindow.getSelection()
   const { value } = editor
   const { document, fragment, selection } = value
   const { start, end } = selection
@@ -85,7 +83,7 @@ function cloneFragment(event, editor, callback = () => undefined) {
   // in the HTML, and can be used for intra-Slate pasting. If it's a text
   // node, wrap it in a `<span>` so we have something to set an attribute on.
   if (attach.nodeType === 3) {
-    const span = window.document.createElement('span')
+    const span = editor.ownerWindow.document.createElement('span')
 
     // COMPAT: In Chrome and Safari, if we don't add the `white-space` style
     // then leading and trailing spaces will be ignored. (2017/09/21)
@@ -106,7 +104,7 @@ function cloneFragment(event, editor, callback = () => undefined) {
 
   // Add the phony content to a div element. This is needed to copy the
   // contents into the html clipboard register.
-  const div = window.document.createElement('div')
+  const div = editor.ownerWindow.document.createElement('div')
   div.appendChild(contents)
 
   // For browsers supporting it, we set the clipboard registers manually,
@@ -135,7 +133,7 @@ function cloneFragment(event, editor, callback = () => undefined) {
   native.selectAllChildren(div)
 
   // Revert to the previous selection right after copying.
-  window.requestAnimationFrame(() => {
+  editor.ownerWindow.requestAnimationFrame(() => {
     editorEl.removeChild(div)
     removeAllRanges(native)
     native.addRange(range)

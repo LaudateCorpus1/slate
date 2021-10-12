@@ -1,7 +1,6 @@
 import Debug from 'debug'
 import { Range } from 'slate'
 import Hotkeys from 'slate-hotkeys'
-import getWindow from 'get-window'
 import {
   IS_FIREFOX,
   IS_IE,
@@ -124,14 +123,13 @@ function BeforePlugin() {
     if (isCopying) return
     if (editor.readOnly) return
 
-    const { relatedTarget, target } = event
-    const window = getWindow(target)
+    const { relatedTarget } = event
 
     // COMPAT: If the current `activeElement` is still the previous one, this is
     // due to the window being blurred when the tab itself becomes unfocused, so
     // we want to abort early to allow to editor to stay focused when the tab
     // becomes focused again.
-    if (activeElement === window.document.activeElement) return
+    if (activeElement === editor.ownerWindow.document.activeElement) return
 
     // COMPAT: The `relatedTarget` can be null when the new focus target is not
     // a "focusable" element (eg. a `<div>` without `tabindex` set).
@@ -182,7 +180,7 @@ function BeforePlugin() {
 
     // Since we may have skipped some input events during the composition, once it is over
     // we need to manually call flush to sync the dom to the slate AST
-    saveCurrentlySelectedCompositionNode()
+    saveCurrentlySelectedCompositionNode(editor)
     saveCurrentNativeNode(editor)
     syncDomToSlateAst(editor)
 
@@ -190,10 +188,10 @@ function BeforePlugin() {
     next()
   }
 
-  function onCompositionUpdate() {
+  function onCompositionUpdate(event, editor) {
     /* prettier-ignore */ if (window.ENABLE_SLATE_LOGGING) console.log(`!! onCompositionUpdate isComposing:${isComposing}`)
     isComposing = true
-    saveCurrentlySelectedCompositionNode()
+    saveCurrentlySelectedCompositionNode(editor)
   }
 
   /**
@@ -240,7 +238,7 @@ function BeforePlugin() {
       editor.delete()
     }
 
-    saveCurrentlySelectedCompositionNode()
+    saveCurrentlySelectedCompositionNode(editor)
     saveCurrentNativeNode(editor)
 
     debug('onCompositionStart', { event })
@@ -256,9 +254,8 @@ function BeforePlugin() {
    */
 
   function onCopy(event, editor, next) {
-    const window = getWindow(event.target)
     isCopying = true
-    window.requestAnimationFrame(() => (isCopying = false))
+    editor.ownerWindow.requestAnimationFrame(() => (isCopying = false))
 
     debug('onCopy', { event })
     next()
@@ -275,9 +272,8 @@ function BeforePlugin() {
   function onCut(event, editor, next) {
     if (editor.readOnly) return
 
-    const window = getWindow(event.target)
     isCopying = true
-    window.requestAnimationFrame(() => (isCopying = false))
+    editor.ownerWindow.requestAnimationFrame(() => (isCopying = false))
 
     debug('onCut', { event })
     next()
@@ -426,8 +422,7 @@ function BeforePlugin() {
     const el = editor.findDOMNode([])
 
     // Save the new `activeElement`.
-    const window = getWindow(event.target)
-    activeElement = window.document.activeElement
+    activeElement = editor.ownerWindow.document.activeElement
 
     // COMPAT: If the editor has nested editable elements, the focus can go to
     // those elements. In Firefox, this must be prevented because it results in
@@ -588,8 +583,7 @@ function BeforePlugin() {
     if (checkIsComposing() && HAS_INPUT_EVENTS_LEVEL_2) return
 
     // Save the new `activeElement`.
-    const window = getWindow(event.target)
-    activeElement = window.document.activeElement
+    activeElement = editor.ownerWindow.document.activeElement
     isUserActionPerformed = true
 
     debug('onSelect', { event })
@@ -657,7 +651,7 @@ function BeforePlugin() {
     const {
       anchorNode: textNode,
       anchorOffset: currentOffset,
-    } = window.getSelection()
+    } = editor.ownerWindow.getSelection()
     /* prettier-ignore */ if (window.ENABLE_SLATE_LOGGING) console.log(`    textNode: ${textNode.textContent} ${textNode.textContent.length}`)
 
     // Just in case: Make sure the currently selected node is in the list of nodes we are going to sync
@@ -693,7 +687,7 @@ function BeforePlugin() {
     // just did above, which wastes about a millisecond.
     reconcileDOMNode(editor, textNode)
     /* prettier-ignore */ if (window.ENABLE_SLATE_LOGGING) console.log('    flush selAfterReconci:',JSON.stringify(editor.value.selection.toJSON()))
-    /* prettier-ignore */ if (window.ENABLE_SLATE_LOGGING) console.log(`    editor: len: ${editor.value.document.text.length} selSlate: ${editor.value.selection.anchor.offset} selNative: ${window.getSelection().anchorOffset} document: ${JSON.stringify(editor.value.document.toJSON())}`)
+    /* prettier-ignore */ if (window.ENABLE_SLATE_LOGGING) console.log(`    editor: len: ${editor.value.document.text.length} selSlate: ${editor.value.selection.anchor.offset} selNative: ${editor.ownerWindow.getSelection().anchorOffset} document: ${JSON.stringify(editor.value.document.toJSON())}`)
 
     return true
   }
@@ -713,7 +707,7 @@ function BeforePlugin() {
     /* prettier-ignore */ if (window.ENABLE_SLATE_LOGGING) console.log(`    slateDomSpan: ${slateDomSpan.textContent} ${slateDomSpan.textContent.length}`)
     /* prettier-ignore */ if (window.ENABLE_SLATE_LOGGING) console.log(`    slateAstNode: ${slateAstNode.text} ${slateAstNode.text.length}`)
     /* prettier-ignore */ if (window.ENABLE_SLATE_LOGGING) console.log('    flush selBeforeInsert:',JSON.stringify(editor.value.selection.toJSON()))
-    /* prettier-ignore */ if (window.ENABLE_SLATE_LOGGING) console.log(`    editor: len: ${editor.value.document.text.length} selSlate: ${editor.value.selection.anchor.offset} selNative: ${window.getSelection().anchorOffset} document: ${JSON.stringify(editor.value.document.toJSON())}`)
+    /* prettier-ignore */ if (window.ENABLE_SLATE_LOGGING) console.log(`    editor: len: ${editor.value.document.text.length} selSlate: ${editor.value.selection.anchor.offset} selNative: ${editor.ownerWindow.getSelection().anchorOffset} document: ${JSON.stringify(editor.value.document.toJSON())}`)
 
     // Now grab the full current text content of the slate dom node that represents the full slate AST node
     // We do need to strip any zero-width spaces though, since slate uses them for decorations and other things,
@@ -740,7 +734,7 @@ function BeforePlugin() {
     // There's a good chance that slate will do nothing with the update above, partly because we have disabled selection
     // updates in some cases.  So, let's also force the browser to move the selection to where we want.
     // (IIRC in some cases slate was also moving the selection back to an old place sometimes, so this fixes that too).
-    setDomSelection(textNode, newSelectionPosition)
+    setDomSelection(editor, textNode, newSelectionPosition)
   }
 
   /**
@@ -828,8 +822,8 @@ function BeforePlugin() {
 
   /** Syncs a new selection position to the dom, but only if the dom does not already have that position */
 
-  function setDomSelection(textNode, offset) {
-    const selection = window.getSelection()
+  function setDomSelection(editor, textNode, offset) {
+    const selection = editor.ownerWindow.getSelection()
 
     if (
       selection == null ||
@@ -913,8 +907,8 @@ function BeforePlugin() {
     addCurrentlySelectedKeyNode(editor, nextNativeOperation)
   }
 
-  function saveCurrentlySelectedCompositionNode() {
-    const selection = window.getSelection()
+  function saveCurrentlySelectedCompositionNode(editor) {
+    const selection = editor.ownerWindow.getSelection()
 
     currentlySelectedCompositionNode =
       selection == null ? null : selection.anchorNode
@@ -927,7 +921,9 @@ function BeforePlugin() {
     if (isComposing) {
       if (currentlySelectedCompositionNode == null) isComposing = false
 
-      if (!window.document.body.contains(currentlySelectedCompositionNode)) {
+      const doc = currentlySelectedCompositionNode.ownerDocument
+
+      if (!doc.body.contains(currentlySelectedCompositionNode)) {
         console.warn(
           'Aborting composition because previously selection node is no longer in the dom!'
         )

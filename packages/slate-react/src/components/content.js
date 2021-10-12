@@ -10,6 +10,7 @@ import {
   HAS_INPUT_EVENTS_LEVEL_2,
 } from 'slate-dev-environment'
 import Hotkeys from 'slate-hotkeys'
+import getWindow from 'get-window'
 
 import EVENT_HANDLERS from '../constants/event-handlers'
 import DATA_ATTRS from '../constants/data-attributes'
@@ -120,7 +121,7 @@ class Content extends React.Component {
   ref = React.createRef()
 
   /**
-   * Set both `this.ref` and `editor.el`
+   * Set `this.ref`, `editor.el`, and `editor.ownerWindow`
    *
    * @type {DOMElement}
    */
@@ -131,6 +132,10 @@ class Content extends React.Component {
 
     if (this.props.domRef) {
       this.props.domRef(el)
+    }
+
+    if (el) {
+      this.props.editor.ownerWindow = getWindow(el)
     }
   }
 
@@ -153,7 +158,9 @@ class Content extends React.Component {
    */
 
   componentDidMount() {
-    window.document.addEventListener(
+    const { editor } = this.props
+
+    editor.ownerWindow.document.addEventListener(
       'selectionchange',
       this.onNativeSelectionChange
     )
@@ -177,8 +184,10 @@ class Content extends React.Component {
    */
 
   componentWillUnmount() {
-    if (window) {
-      window.document.removeEventListener(
+    const { editor } = this.props
+
+    if (editor.ownerWindow) {
+      editor.ownerWindow.document.removeEventListener(
         'selectionchange',
         this.onNativeSelectionChange
       )
@@ -225,8 +234,8 @@ class Content extends React.Component {
     const { value } = editor
     const { selection } = value
     const { isBackward } = selection
-    const native = window.getSelection()
-    const { activeElement } = window.document
+    const native = editor.ownerWindow.getSelection()
+    const { activeElement } = editor.ownerWindow.document
 
     if (debug.update.enabled) {
       debug.update('updateSelection', { selection: selection.toJSON() })
@@ -372,7 +381,7 @@ class Content extends React.Component {
         this.tmp.isUpdatingSelection = false
 
         debug.update('updateSelection:setTimeout', {
-          anchorOffset: window.getSelection().anchorOffset,
+          anchorOffset: editor.ownerWindow.getSelection().anchorOffset,
         })
       })
     }
@@ -469,7 +478,7 @@ class Content extends React.Component {
       const { editor } = this.props
       const { value } = editor
       const { selection } = value
-      const domSelection = window.getSelection()
+      const domSelection = editor.ownerWindow.getSelection()
       const range = editor.findRange(domSelection)
 
       if (range && range.equals(selection.toRange())) {
@@ -532,9 +541,9 @@ class Content extends React.Component {
   onNativeSelectionChange = throttle(event => {
     if (this.props.readOnly) return
 
-    const { activeElement } = window.document
-
-    const native = window.getSelection()
+    const { editor } = this.props
+    const { activeElement } = editor.ownerWindow.document
+    const native = editor.ownerWindow.getSelection()
 
     debug.update('onNativeSelectionChange', {
       anchorOffset: native.anchorOffset,

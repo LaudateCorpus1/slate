@@ -1,4 +1,3 @@
-import getWindow from 'get-window'
 import invariant from 'tiny-invariant'
 import warning from 'tiny-warning'
 import { Value } from 'slate'
@@ -27,13 +26,11 @@ function findRange(native, editor) {
   const el = native.anchorNode || native.startContainer
   if (!el) return null
 
-  const window = getWindow(el)
-
   // If the `native` object is a DOM `Range` or `StaticRange` object, change it
   // into something that looks like a DOM `Selection` instead.
   if (
-    native instanceof window.Range ||
-    (window.StaticRange && native instanceof window.StaticRange)
+    native instanceof editor.ownerWindow.Range ||
+    (editor.ownerWindow.StaticRange && native instanceof editor.ownerWindow.StaticRange)
   ) {
     native = {
       anchorNode: native.startContainer,
