@@ -695,7 +695,7 @@ function BeforePlugin() {
   function syncNodeToSlateAst(editor, slateDomSpan) {
     // Re-read the slate span from the dom, _just in case_ it has been removed from the dom since!
     const key = slateDomSpan.getAttribute(DATA_ATTRS.KEY)
-    slateDomSpan = findDomNode(key)
+    slateDomSpan = findDomNode(key, editor.ownerWindow)
 
     const path = editor.value.document.getPath(key)
     const slateAstNode = editor.value.document.getNode(key)
@@ -939,7 +939,7 @@ function BeforePlugin() {
     // The node with a data-key property entirely encompasses a single slate AST text node.
     // It'll have lots of children for the various decorations, but its entire textContent should map
     // to a single AST node
-    const currentSpan = safelyGetParentKeyNode(window.getSelection().anchorNode)
+    const currentSpan = safelyGetParentKeyNode(editor.ownerWindow.getSelection().anchorNode)
 
     // Save a reference to the currently selected AST node
     // Once the browser has modified the dom, we'll use these to figure out what changes were made
